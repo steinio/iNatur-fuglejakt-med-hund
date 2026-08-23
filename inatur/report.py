@@ -43,13 +43,30 @@ def _offer_block(offer: Offer, prefix: str = "") -> list[str]:
 
     where = ", ".join(x for x in (offer.kommune, offer.fylke) if x)
     if where:
-        lines.append(f"   Sted:    {where}")
+        lines.append(f"   Sted:    {where}" + (f" ({offer.tilbyder})" if offer.tilbyder else ""))
+
+    if offer.period_start or offer.period_end:
+        start = offer.period_start.strftime("%d.%m.%Y") if offer.period_start else "?"
+        end = offer.period_end.strftime("%d.%m.%Y") if offer.period_end else "?"
+        lines.append(f"   Periode: {start} - {end}")
 
     meta = " | ".join(x for x in (offer.price, offer.quota) if x)
     if meta:
         lines.append(f"   Info:    {meta}")
 
-    lines.append(f"   Lenke:   {offer.url}")
+    # Et trekningstilbud kjøpes ikke førstemann til mølla - da er det
+    # søknadsfristen som haster, ikke selve tilgjengeligheten.
+    if offer.lottery:
+        frist = (
+            offer.application_deadline.strftime("%d.%m.%Y")
+            if offer.application_deadline
+            else "ukjent"
+        )
+        lines.append(f"   TREKNING - søknadsfrist {frist}")
+    elif offer.sales_start:
+        lines.append(f"   Salgsstart: {offer.sales_start.strftime('%d.%m.%Y')}")
+
+    lines.append(f"   Lenke:   {offer.full_url}")
     return lines
 
 

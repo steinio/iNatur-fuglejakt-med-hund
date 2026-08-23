@@ -7,7 +7,13 @@ der en naiv "inneholder ordet hund og ordet tillatt"-sjekk går i baret.
 
 import pytest
 
-from inatur.match import classify_dog, find_non_bird_game, find_species, split_sentences
+from inatur.match import (
+    classify_dog,
+    find_non_bird_game,
+    find_species,
+    split_sentences,
+)
+from inatur.match import species_from_api as find_api
 from inatur.models import DogStatus
 
 
@@ -93,9 +99,17 @@ def test_double_negation_reads_as_positive():
 # --------------------------------------------------------- hund: uklart
 
 def test_dog_mentioned_without_verdict_is_unclear():
-    verdict = classify_dog("Hundefører må vise gyldig sauereinbevis.")
+    """Ren omtale uten noe krav eller tillatelse -> uklart."""
+    verdict = classify_dog("Området er populært blant hundefolk.")
     assert verdict.status is DogStatus.UNCLEAR
     assert verdict.is_interesting  # vi varsler heller én gang for mye
+
+
+def test_krav_til_hundefoerer_impliserer_at_hund_er_lov():
+    """Kalibrert mot ekte tekst: et krav til fører forutsetter hund."""
+    verdict = classify_dog("Hundefører må vise gyldig sauereinbevis.")
+    assert verdict.status is DogStatus.CONDITIONAL
+    assert verdict.is_interesting
 
 
 def test_no_dog_mention():
@@ -153,6 +167,169 @@ def test_mixed_bird_and_mammal_offer():
 
 
 # ------------------------------------------------- realistisk sammensatt
+
+# ------------------------------------------------- ekte tekst fra inatur.no
+#
+# Alle tilfellene under er hentet ordrett fra ekte tilbud på inatur.no under
+# kalibreringen. Hver enkelt var opprinnelig feilklassifisert.
+
+
+def test_ekte_bufesertifikat():
+    v = classify_dog("Jakt med hund med gyldig bufesertifikat tillatt, 1 hund pr. jeger.")
+    assert v.status in (DogStatus.ALLOWED, DogStatus.CONDITIONAL)
+
+
+def test_ekte_med_og_uten_hund_i_tittel():
+    """'med og uten hund' tilbyr BEGGE varianter - ikke et nei."""
+    v = classify_dog("UTENBYGDS, SMÅVILTJAKT med og uten hund i Heidal")
+    assert v.status is not DogStatus.NOT_ALLOWED
+    assert v.is_interesting
+
+
+def test_ekte_med_og_utan_hund_nynorsk():
+    v = classify_dog("Småviltjakt med og utan hund i Suldal")
+    assert v.status is not DogStatus.NOT_ALLOWED
+
+
+def test_ekte_nynorsk_ikkje_tillete():
+    """Nynorsk: 'ikkje' + 'tillete' må leses som et nei."""
+    v = classify_dog("Ikkje tillete med hund.")
+    assert v.status is DogStatus.NOT_ALLOWED
+
+
+def test_ekte_nynorsk_utan_hund():
+    v = classify_dog("Det er fritt kortsal for småviltjakt utan hund.")
+    assert v.status is DogStatus.NOT_ALLOWED
+
+
+def test_ekte_nynorsk_ikkje_lov_foer_dato():
+    """'ikkje lov ... før 1. oktober' betyr lov FRA 1. oktober."""
+    v = classify_dog(
+        "I Aurland statsallmenning er det ikkje lov å jakta med hund før 1. oktober."
+    )
+    assert v.status is DogStatus.CONDITIONAL
+    assert v.from_date is not None
+    assert "oktober" in v.from_date
+    assert v.is_interesting
+
+
+def test_ekte_rett_til_aa_bruke_hund():
+    v = classify_dog("Et jaktkort hos oss gir også rett til å bruke en hund.")
+    assert v.status in (DogStatus.ALLOWED, DogStatus.CONDITIONAL)
+
+
+def test_ekte_treningskort_med_avgrenset_forbud():
+    """Et treningskort for fuglehund er ikke et nei fordi ett område er unntatt."""
+    v = classify_dog(
+        "Det er ikke tillatt å trene hund i Middagsfjellet hundeforbudsområde "
+        "i perioden fra og med 1. desember til og med 31. mars.",
+        title="Treningskort for stående fuglehund",
+    )
+    assert v.status is DogStatus.CONDITIONAL
+    assert v.is_interesting
+
+
+def test_ekte_unntak_for_saerskilte_omraader():
+    v = classify_dog(
+        "Jakt med hund er tillatt, med unntak av i særskilte områder og tidsrom "
+        "som fastsettes nærmere i fjellstyrets forvaltningsplan."
+    )
+    assert v.status is DogStatus.CONDITIONAL
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Hund skal ha sauerenhetsbevis ikke eldre enn 2 år.",
+        "Jakthund må dokumentert være sauerein.",
+        "Kortet benyttes til trening av fuglehund i den tildelte perioden.",
+    ],
+)
+def test_ekte_krav_til_hunden_betyr_at_hund_er_lov(text):
+    """Et krav *til* hunden forutsetter at hund i det hele tatt er tillatt."""
+    v = classify_dog(text)
+    assert v.status in (DogStatus.ALLOWED, DogStatus.CONDITIONAL), v.evidence
+    assert v.is_interesting
+
+
+def test_krav_med_negasjon_er_fortsatt_nei():
+    """'hund må ikke brukes' er et krav i formen, men et nei i innholdet."""
+    v = classify_dog("Hund må ikke brukes under jakta.")
+    assert v.status is DogStatus.NOT_ALLOWED
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Alle jaktkort tilbys som «jakt med hund», jegerne velger selv om de vil "
+        "benytte hund under jakten.",
+        "Området egner seg godt for småviltjakt, både som støkkjakt og jakt med hund.",
+    ],
+)
+def test_ekte_uttrykket_jakt_med_hund_er_positivt(text):
+    v = classify_dog(text)
+    assert v.status in (DogStatus.ALLOWED, DogStatus.CONDITIONAL), v.evidence
+
+
+def test_med_fuglehund_om_takstering_teller_ikke():
+    """'linjetakst utført med fuglehund' er ikke en hunderegel."""
+    v = classify_dog(
+        "Kvotene fastsettes ca 25. august etter at linjetakst er utført med "
+        "fuglehund for å finne produksjonen."
+    )
+    assert v.status is DogStatus.UNCLEAR
+
+
+def test_negert_setning_utloeser_ikke_uttrykksregelen():
+    v = classify_dog("Det er ikke anledning til jakt med hund her.")
+    assert v.status is DogStatus.NOT_ALLOWED
+
+
+def test_tittel_loefter_uklar_til_betinget():
+    v = classify_dog("Hundefører må vise gyldig sauereinbevis.", title="Rypejakt med hund")
+    assert v.status is DogStatus.CONDITIONAL
+
+
+def test_tittel_overstyrer_ikke_klart_nei():
+    """Sier teksten tydelig nei, skal ikke tittelen overprøve det."""
+    v = classify_dog("Jakt med hund er ikke tillatt.", title="Rypejakt")
+    assert v.status is DogStatus.NOT_ALLOWED
+
+
+# ------------------------------------------------------- arter fra API-et
+
+
+def test_api_species_priority():
+    birds, priority, other = find_api(["Lirype", "Fjellrype", "Hare"])
+    assert priority == ["Fjellrype", "Lirype"]
+    assert "Lirype" in birds
+    assert other == ["Hare"]
+
+
+def test_api_species_non_bird_only():
+    birds, priority, other = find_api(["Hare", "Rødrev", "Mår"])
+    assert birds == []
+    assert priority == []
+    assert other == ["Hare", "Mår", "Rødrev"]
+
+
+def test_api_smaavilt_counts_as_possible_bird():
+    """'Småvilt' er upresist, men omfatter i praksis nesten alltid rype."""
+    birds, priority, _ = find_api(["Småvilt"])
+    assert birds == ["Småvilt"]
+    assert priority == []
+
+
+def test_api_unknown_species_is_kept():
+    """Nye artsnavn skal ikke stille filtrere bort tilbud."""
+    birds, _, _ = find_api(["Fjellrype", "Kattugle"])
+    assert "Kattugle" in birds
+
+
+def test_api_empty():
+    assert find_api([]) == ([], [], [])
+    assert find_api(None) == ([], [], [])
+
 
 REALISTIC = """
 Småviltjakt i Namsskogan statsallmenning.

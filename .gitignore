@@ -10,7 +10,8 @@ dist/
 state.db
 state.db-journal
 reports/
-fixtures/raw/
+# Rådata og cache fra kalibrering (tests/fixtures er sjekket inn)
+/fixtures/
 
 .pytest_cache/
 .coverage

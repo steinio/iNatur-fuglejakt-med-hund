@@ -22,6 +22,10 @@ filters:
   # Sett til true for å kun få li- og fjellrype.
   priority_only: false
 
+  # Trekningstilbud har søknadsfrist i stedet for direktesalg.
+  # Sett til true for kun å få kort du kan kjøpe med én gang.
+  skip_lottery: false
+
   # Maks pris i kroner. null = ingen grense.
   max_price: null
 
@@ -29,9 +33,9 @@ filters:
   fylker: []
 
 scraping:
-  # Sekunder mellom hver forespørsel. Ikke sett denne under 1.
-  delay: 1.5
-  max_pages: 40
+  # Sekunder mellom hver forespørsel. Ikke sett denne under 0.5.
+  delay: 0.6
+  max_pages: 200
   respect_robots: true
 
 output:

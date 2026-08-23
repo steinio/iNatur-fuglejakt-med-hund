@@ -71,16 +71,28 @@ class Offer:
 
     species: list[str] = field(default_factory=list)
     priority_species: list[str] = field(default_factory=list)
+    other_game: list[str] = field(default_factory=list)
 
     period_start: Optional[date] = None
     period_end: Optional[date] = None
+    sales_start: Optional[date] = None
+    application_deadline: Optional[date] = None
 
     price: Optional[str] = None
     quota: Optional[str] = None
     available: bool = True
 
+    # Trekning i stedet for direktesalg - da gjelder søknadsfrist, ikke
+    # "førstemann til mølla".
+    lottery: bool = False
+
+    short_description: str = ""
     dog: DogVerdict = field(default_factory=lambda: DogVerdict(DogStatus.NO_MENTION))
     raw_text: str = ""
+
+    @property
+    def full_url(self) -> str:
+        return f"https://www.inatur.no{self.url}" if self.url.startswith("/") else self.url
 
     @property
     def text_hash(self) -> str:

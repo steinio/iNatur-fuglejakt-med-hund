@@ -22,11 +22,13 @@ class Config:
     require_birds: bool = True
     # Rapporter kun li-/fjellrype.
     priority_only: bool = False
+    # Hopp over trekningstilbud (søknad, ikke direktesalg).
+    skip_lottery: bool = False
     max_price: int | None = None
     fylker: list[str] = field(default_factory=list)
 
-    delay: float = 1.5
-    max_pages: int = 40
+    delay: float = 0.6
+    max_pages: int = 200
     respect_robots: bool = True
 
     db_path: str = "state.db"
@@ -49,10 +51,11 @@ class Config:
             ),
             require_birds=filters.get("require_birds", True),
             priority_only=filters.get("priority_only", False),
+            skip_lottery=filters.get("skip_lottery", False),
             max_price=filters.get("max_price"),
             fylker=filters.get("fylker", []) or [],
-            delay=scraping.get("delay", 1.5),
-            max_pages=scraping.get("max_pages", 40),
+            delay=scraping.get("delay", 0.6),
+            max_pages=scraping.get("max_pages", 200),
             respect_robots=scraping.get("respect_robots", True),
             db_path=output.get("db_path", "state.db"),
             report_path=output.get("report_path", "reports/latest.txt"),

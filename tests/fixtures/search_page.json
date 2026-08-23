@@ -1,0 +1,158 @@
+{
+  "paginering": {
+    "side": 0,
+    "sideStørrelse": 12,
+    "totaltAntallSider": 1,
+    "harNesteSide": false,
+    "antallElementer": 3,
+    "totaltAntallElementer": 3
+  },
+  "resultat": [
+    {
+      "id": "55703df3e4b06b508ac2b37a",
+      "type": "smaavilttilbud",
+      "tittel": "Småviltjakt Ringvassøy.",
+      "bilde": "//imagedelivery.net/hR_k_33bmwvCmQSAO0WhnQ/a17cbe6b-6dad-4217-8cb9-9f2efbd4d300",
+      "url": "/jakt/55703df3e4b06b508ac2b37a/smaviltjakt-ringvassoy",
+      "fraPris": 400.0,
+      "fylker": [
+        "Troms"
+      ],
+      "kommuner": [
+        "Tromsø"
+      ],
+      "opprettet": 1433419251915,
+      "sistOppdatert": 1787474861522,
+      "sistPublisert": 1787474861518,
+      "utsolgt": false,
+      "harTrekning": false,
+      "harUtkast": false,
+      "erLaast": false,
+      "utkast": false,
+      "deaktivert": false,
+      "venterPåGodkjenning": false,
+      "låst": false,
+      "fra": 1788991200000,
+      "til": 1794265200000,
+      "salgsstart": 1788246000000,
+      "kortBeskrivelse": "Velkommen til småviltjakt ved Skarsfjorden - Svartvatnet på Ringvassøya. ",
+      "arter": [
+        "Lirype",
+        "Fjellrype"
+      ],
+      "tilbydernavn": "Skarsfjord Utmarkslag",
+      "forhandlersalgTillatt": false,
+      "forstegangsjegerRabatt": false,
+      "harKortAktivering": false,
+      "erNorgeskortet": false,
+      "soknadsfristUtlopt": false,
+      "thumbnailImageSrc": "//imagedelivery.net/hR_k_33bmwvCmQSAO0WhnQ/a17cbe6b-6dad-4217-8cb9-9f2efbd4d300/w=358,h=358,fit=cover,gravity=auto,format=auto",
+      "opprettetFormatert": "04.06.2015",
+      "fylkerFormatert": "Troms",
+      "kommunerFormatert": "Tromsø",
+      "sistOppdatertFormatert": "23.08.2026",
+      "utlopt": false,
+      "harFraPris": true
+    },
+    {
+      "id": "60bddb82c6cc5e00036fd153",
+      "type": "smaavilttilbud",
+      "tittel": "Rypejakt / småviltjakt i Trysil",
+      "bilde": "//imagedelivery.net/hR_k_33bmwvCmQSAO0WhnQ/c1e00a23-a4f8-4007-26f7-04d80ca12800",
+      "url": "/jakt/60bddb82c6cc5e00036fd153/rypejakt-smaviltjakt-i-trysil",
+      "fraPris": 250.0,
+      "fylker": [
+        "Innlandet"
+      ],
+      "kommuner": [
+        "Trysil"
+      ],
+      "opprettet": 1623055234461,
+      "sistOppdatert": 1787404277978,
+      "sistPublisert": 1787404277977,
+      "utsolgt": false,
+      "harTrekning": false,
+      "harUtkast": false,
+      "erLaast": false,
+      "utkast": false,
+      "deaktivert": false,
+      "venterPåGodkjenning": false,
+      "låst": false,
+      "fra": 1787263200000,
+      "til": 1803769200000,
+      "salgsstart": 1782111600000,
+      "soknadsstart": 1778223600000,
+      "soknadsfrist": 1780869599999,
+      "kortBeskrivelse": "Jakt på rype og skogsfugl i Trysil-Knuts fjellverden.     I første periode er hytteeiere i Trysil-Knuts fjellverden prioritert etter søknad.  Se lenger ned for mer informasjon.",
+      "arter": [
+        "Lirype",
+        "Fjellrype",
+        "Røy",
+        "Tiur",
+        "Orrfugl",
+        "Jerpe",
+        "Hare"
+      ],
+      "tilbydernavn": "Eltdalen Nordre Børke",
+      "forhandlersalgTillatt": false,
+      "forstegangsjegerRabatt": false,
+      "harKortAktivering": false,
+      "erNorgeskortet": false,
+      "soknadsfristUtlopt": true,
+      "thumbnailImageSrc": "//imagedelivery.net/hR_k_33bmwvCmQSAO0WhnQ/c1e00a23-a4f8-4007-26f7-04d80ca12800/w=358,h=358,fit=cover,gravity=auto,format=auto",
+      "opprettetFormatert": "07.06.2021",
+      "fylkerFormatert": "Innlandet",
+      "kommunerFormatert": "Trysil",
+      "sistOppdatertFormatert": "22.08.2026",
+      "utlopt": false,
+      "harFraPris": true
+    },
+    {
+      "id": "69afe09a897bd74faebad9ed",
+      "type": "smaavilttilbud",
+      "tittel": "Due, and og gåsejakt m. overnatting i oppusset gjestehus på gård med sjøutsikt! ",
+      "bilde": "//imagedelivery.net/hR_k_33bmwvCmQSAO0WhnQ/3f05b878-7a5c-4d5d-7bf0-c42da7d65c00",
+      "url": "/jakt/69afe09a897bd74faebad9ed/due-and-og-gasejakt-m-overnatting-i-oppusset-gjestehus-pa-gard-med-sjoutsikt",
+      "fraPris": 5000.0,
+      "fylker": [
+        "Østfold"
+      ],
+      "kommuner": [
+        "Sarpsborg"
+      ],
+      "opprettet": 1773133978363,
+      "sistOppdatert": 1787419604152,
+      "sistPublisert": 1787419604152,
+      "utsolgt": false,
+      "harTrekning": false,
+      "harUtkast": false,
+      "erLaast": false,
+      "utkast": false,
+      "deaktivert": false,
+      "venterPåGodkjenning": false,
+      "låst": false,
+      "fra": 1788732000000,
+      "til": 1795906800000,
+      "kortBeskrivelse": "Due, and- og gåsejakt høst 2026. Inntil 6 gevær kan bidra i fellingen. Hus med plass til 10 pers. 3 sov. Sjøørretfiske i Tosekilen. ",
+      "arter": [
+        "Småvilt",
+        "Gjess",
+        "And",
+        "Ringdue"
+      ],
+      "tilbydernavn": "Olav Marius Lileng",
+      "forhandlersalgTillatt": false,
+      "forstegangsjegerRabatt": false,
+      "harKortAktivering": false,
+      "erNorgeskortet": false,
+      "soknadsfristUtlopt": false,
+      "thumbnailImageSrc": "//imagedelivery.net/hR_k_33bmwvCmQSAO0WhnQ/3f05b878-7a5c-4d5d-7bf0-c42da7d65c00/w=358,h=358,fit=cover,gravity=auto,format=auto",
+      "opprettetFormatert": "10.03.2026",
+      "fylkerFormatert": "Østfold",
+      "kommunerFormatert": "Sarpsborg",
+      "sistOppdatertFormatert": "22.08.2026",
+      "utlopt": false,
+      "harFraPris": true
+    }
+  ]
+}

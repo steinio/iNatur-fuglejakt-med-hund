@@ -2,12 +2,23 @@ name: Sjekk iNatur
 
 on:
   schedule:
-    # Jaktsesong (aug-okt): hvert 20. minutt, 05:00-22:00 norsk tid.
-    # GitHub forsinker uansett planlagte kjøringer i offentlige repo, så
-    # kortere intervall gir i praksis ikke tettere sjekker.
-    - cron: "*/20 3-20 * 8-10 *"
-    # Resten av året: én gang i timen.
-    - cron: "0 * * 1-7,11,12 *"
+    # ── HVOR OFTE ────────────────────────────────────────────────────────
+    # Endre denne ene linja. Tidene er UTC; norsk sommertid er UTC+2.
+    #
+    #   "0 */6 * * *"    hver 6. time              (4 i døgnet)
+    #   "0 */3 * * *"    hver 3. time              (8 i døgnet)   ← nå
+    #   "0 * * * *"      hver time
+    #   "0 5,15 * * *"   kl. 07 og 17 norsk tid    (2 i døgnet)
+    #   "0 6 * * *"      én gang daglig, kl. 08 norsk tid
+    #   "*/20 * * * *"   hvert 20. minutt          (tettest fornuftig)
+    #
+    # GitHub forsinker planlagte kjøringer i offentlige repo, ofte med
+    # 10-20 minutter, så tettere enn hvert 20. minutt gir lite igjen.
+    #
+    # Skru HELT AV uten å endre kode: Actions-fanen → «Sjekk iNatur» →
+    # «...» øverst til høyre → Disable workflow. Skrus på igjen samme sted.
+    # Du kan fortsatt kjøre manuelt med «Run workflow» når den er avslått.
+    - cron: "0 */3 * * *"
   workflow_dispatch:
 
 # En kø av ventende kjøringer er verdiløs: neste kjøring henter uansett

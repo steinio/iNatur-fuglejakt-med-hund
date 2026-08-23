@@ -171,13 +171,37 @@ offentlig tilgjengelige tilbud fra inatur.no.
 
 ## Planlegging
 
-GitHub Actions kjører sjekken automatisk:
+GitHub Actions kjører sjekken hver 3. time. Tilstanden ligger i Actions-cachen,
+tekstrapporten lastes opp som artifact, og nettsiden publiseres til Pages.
 
-- **aug–okt** (sesong og restsalg): hvert 15. minutt, 05–22 norsk tid
-- **resten av året**: hver time
+### Endre hvor ofte
 
-Tilstanden ligger i Actions-cachen, tekstrapporten lastes opp som artifact, og
-nettsiden publiseres til Pages. Kan også kjøres fra `workflow_dispatch`.
+Én linje i [`.github/workflows/check.yml`](.github/workflows/check.yml):
+
+```yaml
+- cron: "0 */3 * * *"
+```
+
+Vanlige verdier står som kommentar rett over. Tidene er UTC – norsk sommertid
+er UTC+2, vintertid UTC+1.
+
+| Cron | Hvor ofte |
+|---|---|
+| `0 */6 * * *` | hver 6. time |
+| `0 */3 * * *` | hver 3. time ← nå |
+| `0 * * * *` | hver time |
+| `0 5,15 * * *` | kl. 07 og 17 norsk tid |
+| `0 6 * * *` | én gang daglig, kl. 08 norsk tid |
+| `*/20 * * * *` | hvert 20. minutt |
+
+GitHub forsinker planlagte kjøringer i offentlige repo, ofte med 10–20 minutter,
+så tettere enn hvert 20. minutt gir lite igjen.
+
+### Skru av
+
+Uten å endre kode: **Actions-fanen → «Sjekk iNatur» → «…» øverst til høyre →
+Disable workflow.** Skrus på igjen samme sted. Du kan fortsatt kjøre manuelt med
+**Run workflow** mens den er avslått.
 
 Push-varsling er ikke satt opp ennå. `inatur/report.py` og `inatur/site.py` har
 begge et smalt grensesnitt (`render` + `write`) nettopp for at Telegram eller

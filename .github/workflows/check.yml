@@ -18,15 +18,17 @@ concurrency:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
-  check:
+  # Selve jobben: søk, klassifiser, bygg rapport og nettside.
+  #
+  # Denne er bevisst skilt fra publiseringen. `deploy` krever miljøet
+  # github-pages, som har egne regler for hvilke grener som får lov -
+  # og de reglene følger ikke automatisk med når standardgrenen endres.
+  # Blir publiseringen blokkert, skal vi likevel ha kjørt sjekken og
+  # tatt vare på rapporten.
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -38,8 +40,8 @@ jobs:
       - name: Installer
         run: pip install -e .
 
-      # Tilstanden avgjør hva som er «nytt» siden sist. Uten den ville hver
-      # kjøring rapportert alt på nytt.
+      # Tilstanden avgjør hva som er «nytt» siden sist, og lar oss hoppe
+      # over detaljsider for tilbud som ikke er endret.
       - name: Hent lagret tilstand
         uses: actions/cache/restore@v4
         with:
@@ -73,6 +75,16 @@ jobs:
         with:
           path: site/
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
       - name: Publiser til GitHub Pages
         id: deploy
         uses: actions/deploy-pages@v4

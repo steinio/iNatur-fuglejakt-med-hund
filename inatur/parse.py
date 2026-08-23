@@ -53,6 +53,7 @@ def offer_from_api(record: dict[str, Any]) -> Offer:
         price=f"fra {int(price)} kr" if price else None,
         available=not record.get("utsolgt", False) and not record.get("utlopt", False),
         lottery=bool(record.get("harTrekning")),
+        last_updated=record.get("sistOppdatert"),
         short_description=(record.get("kortBeskrivelse") or "").strip(),
     )
 
@@ -94,5 +95,6 @@ def enrich_from_detail(offer: Offer, html: str) -> Offer:
     """Fyller inn vilkårstekst og endelig hundevurdering fra detaljsiden."""
     text = detail_text(html)
     offer.raw_text = rules_text(text)
+    offer.refresh_hash()
     offer.dog = classify_dog(offer.raw_text, title=offer.title)
     return offer

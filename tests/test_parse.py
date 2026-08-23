@@ -122,3 +122,45 @@ def test_enrich_gives_dog_verdict(search_page, detail_html):
 def test_real_rules_text_classifies_as_dog_allowed(detail_html):
     rules = rules_text(detail_text(detail_html))
     assert classify_dog(rules).status in (DogStatus.ALLOWED, DogStatus.CONDITIONAL)
+
+
+# ------------------------------------------------- fylkefilter i API-et
+
+
+def test_search_url_without_fylke():
+    from inatur.api import Client
+
+    with Client() as c:
+        url = c.search_url(page=2)
+    assert "smaavilttilbud" in url
+    assert "p=2" in url
+    assert "fylker" not in url
+
+
+def test_search_url_with_fylke():
+    """Tjenersiden filtrerer på feltet `fylker` - det sparer ~130 sider."""
+    from inatur.api import Client
+
+    with Client() as c:
+        url = c.search_url(fylke="Vestland")
+    assert "fylker" in url
+    assert "Vestland" in url
+
+
+def test_search_merges_and_dedupes_fylker(monkeypatch):
+    """Ett søk per fylke, og et tilbud som ligger i to fylker skal kun telles én gang."""
+    from inatur.api import Client
+
+    pages = {
+        "Vestland": [{"id": "a"}, {"id": "delt"}],
+        "Rogaland": [{"id": "b"}, {"id": "delt"}],
+    }
+
+    with Client() as c:
+        def fake(only_available, fylke):
+            yield from pages[fylke]
+
+        monkeypatch.setattr(c, "_search_one", fake)
+        ids = [r["id"] for r in c.search(fylker=["Vestland", "Rogaland"])]
+
+    assert ids == ["a", "delt", "b"]

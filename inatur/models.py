@@ -56,6 +56,23 @@ class DogVerdict:
         """Alt utenom et klart nei er verdt å se på."""
         return self.status is not DogStatus.NOT_ALLOWED
 
+    def to_dict(self) -> dict:
+        return {
+            "status": self.status.value,
+            "evidence": self.evidence,
+            "from_date": self.from_date,
+            "restrictions": self.restrictions,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "DogVerdict":
+        return cls(
+            status=DogStatus(data["status"]),
+            evidence=list(data.get("evidence") or []),
+            from_date=data.get("from_date"),
+            restrictions=list(data.get("restrictions") or []),
+        )
+
 
 @dataclass
 class Offer:
@@ -90,14 +107,24 @@ class Offer:
     dog: DogVerdict = field(default_factory=lambda: DogVerdict(DogStatus.NO_MENTION))
     raw_text: str = ""
 
+    # Millisekunder siden epoch, fra API-feltet `sistOppdatert`. Nøkkelen til å
+    # slippe å hente detaljsiden på nytt for tilbud som ikke er endret.
+    last_updated: Optional[int] = None
+
+    # Utledes av raw_text, men kan settes direkte når vi gjenbruker en
+    # mellomlagret vurdering og dermed aldri henter teksten.
+    text_hash: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.text_hash and self.raw_text:
+            self.refresh_hash()
+
+    def refresh_hash(self) -> None:
+        self.text_hash = hashlib.sha256(self.raw_text.encode("utf-8")).hexdigest()[:16]
+
     @property
     def full_url(self) -> str:
         return f"https://www.inatur.no{self.url}" if self.url.startswith("/") else self.url
-
-    @property
-    def text_hash(self) -> str:
-        """Endres når vilkårsteksten endres - brukes til å oppdage stille endringer."""
-        return hashlib.sha256(self.raw_text.encode("utf-8")).hexdigest()[:16]
 
     @property
     def has_birds(self) -> bool:

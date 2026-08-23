@@ -58,26 +58,48 @@ def cmd_check(args: argparse.Namespace) -> int:
     )
 
     offers: list[Offer] = []
+    with Store(config.db_path) as store:
+        cache = store.cached_verdicts()
+
     with Client(fetch_config) as client:
         # Hentes uten ledig-filter: med det forsvinner utsolgte tilbud helt, og
         # da kan vi aldri oppdage at et kort blir ledig igjen.
-        for record in client.search(only_available=False):
+        for record in client.search(only_available=False, fylker=config.fylker):
             offers.append(offer_from_api(record))
         print(f"  {len(offers)} tilbud hentet fra API-et", file=sys.stderr)
 
         # Detaljsidene er dyre, så vi henter dem kun for tilbud som allerede
         # har passert art- og tilgjengelighetsfiltrene.
         candidates = [o for o in offers if _prefilter(o, config)]
-        print(f"  {len(candidates)} aktuelle - henter vilkår", file=sys.stderr)
+
+        # ... og av dem, kun de som er nye eller faktisk endret siden sist.
+        # API-et forteller oss når tilbudet sist ble oppdatert, så resten kan
+        # gjenbruke vurderingen fra forrige kjøring. Det er forskjellen på
+        # ~1000 forespørsler i kvarteret og en håndfull.
+        stale: list[Offer] = []
+        for offer in candidates:
+            hit = cache.get(offer.id)
+            if hit and hit[0] is not None and hit[0] == offer.last_updated:
+                offer.dog = hit[2]
+                offer.text_hash = hit[1]
+            else:
+                stale.append(offer)
+
+        reused = len(candidates) - len(stale)
+        print(
+            f"  {len(candidates)} aktuelle - {reused} uendret, "
+            f"henter vilkår for {len(stale)}",
+            file=sys.stderr,
+        )
 
         if not args.no_detail:
-            for i, offer in enumerate(candidates, 1):
+            for i, offer in enumerate(stale, 1):
                 try:
                     enrich_from_detail(offer, client.detail_html(offer.url))
                 except Exception as exc:  # noqa: BLE001 - én dårlig side stopper ikke kjøringen
                     print(f"  advarsel: {offer.url}: {exc}", file=sys.stderr)
                 if i % 25 == 0:
-                    print(f"    {i}/{len(candidates)}", file=sys.stderr)
+                    print(f"    {i}/{len(stale)}", file=sys.stderr)
 
     relevant = [o for o in candidates if _keep(o, config)]
 
@@ -97,7 +119,9 @@ def cmd_check(args: argparse.Namespace) -> int:
         if args.dry_run:
             print("(dry-run: tilstanden er ikke oppdatert)", file=sys.stderr)
         else:
-            store.record(relevant, mark_notified=[c.offer.id for c in changes])
+            # Lagre alle vurderte tilbud, ikke bare de som rapporteres:
+            # ellers hentes de vi filtrerer bort på nytt hver kjøring.
+            store.record(candidates, mark_notified=[c.offer.id for c in changes])
 
     return 0
 
@@ -140,7 +164,7 @@ def cmd_stats(args: argparse.Namespace) -> int:
     unclear: list[tuple[str, str]] = []
 
     with Client() as client:
-        offers = [offer_from_api(r) for r in client.search()]
+        offers = [offer_from_api(r) for r in client.search(fylker=config.fylker)]
         candidates = [o for o in offers if _prefilter(o, config)][: args.limit]
         print(f"{len(offers)} tilbud, vurderer {len(candidates)} detaljsider\n",
               file=sys.stderr)

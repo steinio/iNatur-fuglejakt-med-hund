@@ -104,9 +104,32 @@ rapporteres, om ikke-fugletilbud skal filtreres bort, kun li-/fjellrype,
 om trekningstilbud skal hoppes over, prisgrense, fylker, og hvor forsiktig
 scrapingen skal være.
 
-Detaljsider hentes bare for tilbud som allerede har passert art- og
-tilgjengelighetsfiltrene, så et smalere filter betyr både raskere kjøring og
-mindre belastning på nettstedet.
+**Standardregionen er Vestlandet.** «Vestlandet» finnes ikke som verdi hos
+inatur – regionen er fylkene `Vestland`, `Rogaland` og `Møre og Romsdal`. Tøm
+`fylker` for å søke i hele landet.
+
+## Hvorfor kjøringene er raske
+
+To ting gjør at en kjøring tar sekunder i stedet for et kvarter:
+
+**Fylkefilter på tjenersiden.** API-et støtter `{"felt":"fylker"}`, så vi
+henter bare tilbudene i regionen i stedet for å paginere gjennom alle 1732.
+
+**Mellomlagrede vurderinger.** Søketreffet har `sistOppdatert`. Er tidsstempelet
+uendret siden forrige kjøring, gjenbruker vi hundevurderingen og henter aldri
+detaljsiden. Alle vurderte tilbud lagres – også de vi filtrerer bort – ellers
+ville «hund ikke tillatt»-tilbudene blitt hentet på nytt hver eneste gang.
+
+Målt på Vestlandet:
+
+| | Forespørsler | Tid |
+|---|---|---|
+| Første kjøring | ~150 | 90 s |
+| Senere kjøringer | ~14 | **8 s** |
+
+Til sammenligning brukte den første versjonen ~1150 forespørsler og nær 14
+minutter – hvert kvarter. Det var verken hensynsfullt mot inatur.no eller
+holdbart innenfor Actions-kvoten.
 
 ## Grensesnittet: nettsiden
 

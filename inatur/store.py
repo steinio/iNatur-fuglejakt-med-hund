@@ -12,11 +12,12 @@ Tre endringer er interessante:
 from __future__ import annotations
 
 import sqlite3
+import json
 from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .models import Change, ChangeKind, Offer
+from .models import Change, ChangeKind, DogVerdict, Offer
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS offers (
@@ -27,6 +28,8 @@ CREATE TABLE IF NOT EXISTS offers (
     text_hash    TEXT NOT NULL,
     dog_status   TEXT NOT NULL,
     species      TEXT NOT NULL DEFAULT '',
+    last_updated INTEGER,
+    dog_json     TEXT,
     first_seen   TEXT NOT NULL,
     last_seen    TEXT NOT NULL,
     notified_at  TEXT
@@ -47,6 +50,11 @@ class Store:
         self.conn.row_factory = sqlite3.Row
         with closing(self.conn.cursor()) as cur:
             cur.executescript(SCHEMA)
+            # Eldre databaser mangler mellomlagringskolonnene.
+            existing = {r[1] for r in cur.execute("PRAGMA table_info(offers)")}
+            for column, decl in (("last_updated", "INTEGER"), ("dog_json", "TEXT")):
+                if column not in existing:
+                    cur.execute(f"ALTER TABLE offers ADD COLUMN {column} {decl}")
         self.conn.commit()
 
     def close(self) -> None:
@@ -89,6 +97,26 @@ class Store:
                     )
         return changes
 
+    def cached_verdicts(self) -> dict[str, tuple[int | None, str, DogVerdict]]:
+        """Lagrede hundevurderinger, nøklet på tilbuds-id.
+
+        Brukes til å hoppe over detaljsider for tilbud som ikke er endret siden
+        forrige kjøring. Det er forskjellen på ~1000 forespørsler og en håndfull.
+        """
+        out: dict[str, tuple[int | None, str, DogVerdict]] = {}
+        with closing(self.conn.cursor()) as cur:
+            cur.execute(
+                "SELECT id, last_updated, text_hash, dog_json FROM offers "
+                "WHERE dog_json IS NOT NULL"
+            )
+            for row in cur.fetchall():
+                try:
+                    verdict = DogVerdict.from_dict(json.loads(row["dog_json"]))
+                except (ValueError, KeyError):
+                    continue
+                out[row["id"]] = (row["last_updated"], row["text_hash"], verdict)
+        return out
+
     def record(self, offers: list[Offer], mark_notified: list[str] | None = None) -> None:
         """Skriver gjeldende tilstand. Kall etter at varsling er gjort."""
         now = _now()
@@ -98,9 +126,9 @@ class Store:
                 cur.execute(
                     """
                     INSERT INTO offers (id, url, title, available, text_hash,
-                                        dog_status, species, first_seen, last_seen,
-                                        notified_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                        dog_status, species, last_updated, dog_json,
+                                        first_seen, last_seen, notified_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(id) DO UPDATE SET
                         url         = excluded.url,
                         title       = excluded.title,
@@ -108,6 +136,8 @@ class Store:
                         text_hash   = excluded.text_hash,
                         dog_status  = excluded.dog_status,
                         species     = excluded.species,
+                        last_updated= excluded.last_updated,
+                        dog_json    = excluded.dog_json,
                         last_seen   = excluded.last_seen,
                         notified_at = COALESCE(excluded.notified_at, offers.notified_at)
                     """,
@@ -119,6 +149,8 @@ class Store:
                         offer.text_hash,
                         offer.dog.status.value,
                         ",".join(offer.species),
+                        offer.last_updated,
+                        json.dumps(offer.dog.to_dict(), ensure_ascii=False),
                         now,
                         now,
                         now if offer.id in notified else None,

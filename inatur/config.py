@@ -25,7 +25,10 @@ class Config:
     # Hopp over trekningstilbud (søknad, ikke direktesalg).
     skip_lottery: bool = False
     max_price: int | None = None
-    fylker: list[str] = field(default_factory=list)
+    # Vestlandet som standard.
+    fylker: list[str] = field(
+        default_factory=lambda: ["Vestland", "Rogaland", "Møre og Romsdal"]
+    )
 
     delay: float = 0.6
     max_pages: int = 200
@@ -54,7 +57,7 @@ class Config:
             priority_only=filters.get("priority_only", False),
             skip_lottery=filters.get("skip_lottery", False),
             max_price=filters.get("max_price"),
-            fylker=filters.get("fylker", []) or [],
+            fylker=filters.get("fylker", cls().fylker) or [],
             delay=scraping.get("delay", 0.6),
             max_pages=scraping.get("max_pages", 200),
             respect_robots=scraping.get("respect_robots", True),

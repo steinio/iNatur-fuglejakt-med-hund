@@ -2,15 +2,19 @@ name: Sjekk iNatur
 
 on:
   schedule:
-    # Jaktsesong (aug-okt): hvert 15. minutt, 05:00-22:00 norsk tid.
-    - cron: "*/15 3-20 * 8-10 *"
+    # Jaktsesong (aug-okt): hvert 20. minutt, 05:00-22:00 norsk tid.
+    # GitHub forsinker uansett planlagte kjøringer i offentlige repo, så
+    # kortere intervall gir i praksis ikke tettere sjekker.
+    - cron: "*/20 3-20 * 8-10 *"
     # Resten av året: én gang i timen.
     - cron: "0 * * 1-7,11,12 *"
   workflow_dispatch:
 
+# En kø av ventende kjøringer er verdiløs: neste kjøring henter uansett
+# ferske data. Avbryt heller den gamle enn å bygge opp etterslep.
 concurrency:
   group: inatur-check
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -44,6 +48,7 @@ jobs:
           restore-keys: inatur-state-
 
       - name: Kjør sjekk
+        timeout-minutes: 20
         run: inatur check
 
       - name: Lagre tilstand

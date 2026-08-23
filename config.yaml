@@ -29,8 +29,15 @@ filters:
   # Maks pris i kroner. null = ingen grense.
   max_price: null
 
-  # Begrens til fylker, f.eks. ["Trøndelag", "Innlandet"]. Tom = alle.
-  fylker: []
+  # Begrens til fylker. Tom liste = hele landet.
+  #
+  # Standard er Vestlandet. «Vestlandet» finnes ikke som verdi hos inatur -
+  # regionen er disse tre fylkene. Merk at Vestland dekker gamle Hordaland
+  # og Sogn og Fjordane etter sammenslåingen.
+  #
+  # Andre verdier i datasettet: Innlandet, Trøndelag, Buskerud, Akershus,
+  # Telemark, Troms, Nordland, Agder, Østfold, Vestfold, Oslo, Svalbard.
+  fylker: ["Vestland", "Rogaland", "Møre og Romsdal"]
 
 scraping:
   # Sekunder mellom hver forespørsel. Ikke sett denne under 0.5.

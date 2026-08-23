@@ -134,22 +134,52 @@ class Client:
 
     # ------------------------------------------------------------------
 
-    def search_url(self, page: int = 0, only_available: bool = False) -> str:
+    def search_url(
+        self, page: int = 0, only_available: bool = False, fylke: str | None = None
+    ) -> str:
+        filters = list(DEFAULT_FILTER)
+        if fylke:
+            # Tjenersiden filtrerer på fylke via feltet `fylker`. Det sparer oss
+            # for å paginere gjennom alle 1732 tilbud for å finne de ~100 som
+            # ligger i vår region.
+            filters.append({"felt": "fylker", "sokeord": fylke})
         params = {
-            "f": json.dumps(DEFAULT_FILTER, separators=(",", ":"), ensure_ascii=False),
+            "f": json.dumps(filters, separators=(",", ":"), ensure_ascii=False),
             "p": str(page),
         }
         if only_available:
             params["ledig"] = "true"
         return f"{BASE}{SEARCH_ENDPOINT}?{urlencode(params)}"
 
-    def search(self, only_available: bool = False) -> Iterator[dict[str, Any]]:
-        """Gir hvert søketreff som rå dict, side for side."""
+    def _search_one(
+        self, only_available: bool, fylke: str | None
+    ) -> Iterator[dict[str, Any]]:
         for page in range(self.config.max_pages):
-            data = self.get(self.search_url(page, only_available)).json()
+            data = self.get(self.search_url(page, only_available, fylke)).json()
             yield from data.get("resultat", [])
             if not data.get("paginering", {}).get("harNesteSide"):
                 return
+
+    def search(
+        self, only_available: bool = False, fylker: list[str] | None = None
+    ) -> Iterator[dict[str, Any]]:
+        """Gir hvert søketreff som rå dict.
+
+        Med `fylker` kjøres ett søk per fylke og treffene slås sammen. Flere
+        fylkefiltre i samme spørring ANDes av tjeneren og gir null treff, så
+        det må gjøres slik.
+        """
+        if not fylker:
+            yield from self._search_one(only_available, None)
+            return
+
+        seen: set[str] = set()
+        for fylke in fylker:
+            for record in self._search_one(only_available, fylke):
+                oid = str(record.get("id") or "")
+                if oid and oid not in seen:
+                    seen.add(oid)
+                    yield record
 
     def total_count(self, only_available: bool = False) -> int:
         data = self.get(self.search_url(0, only_available)).json()

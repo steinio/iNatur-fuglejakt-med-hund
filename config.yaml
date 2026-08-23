@@ -1,0 +1,39 @@
+# Konfigurasjon for iNatur fuglejakt-varsling.
+
+filters:
+  # Hvilke hundestatuser som skal rapporteres.
+  #   allowed      - klart ja
+  #   conditional  - ja, men med dato/forbehold
+  #   unclear      - hund nevnt, men uklart om det er lov
+  #   no_mention   - hund ikke nevnt i det hele tatt
+  #   not_allowed  - klart nei (tas normalt ikke med)
+  #
+  # Vi tar med unclear og no_mention med vilje: å gå glipp av et lirypekort
+  # koster mer enn å få et varsel for mye.
+  dog_statuses:
+    - allowed
+    - conditional
+    - unclear
+    - no_mention
+
+  # Krev at tilbudet gjelder minst én fugleart (filtrerer bort ren hare-/revejakt).
+  require_birds: true
+
+  # Sett til true for å kun få li- og fjellrype.
+  priority_only: false
+
+  # Maks pris i kroner. null = ingen grense.
+  max_price: null
+
+  # Begrens til fylker, f.eks. ["Trøndelag", "Innlandet"]. Tom = alle.
+  fylker: []
+
+scraping:
+  # Sekunder mellom hver forespørsel. Ikke sett denne under 1.
+  delay: 1.5
+  max_pages: 40
+  respect_robots: true
+
+output:
+  db_path: state.db
+  report_path: reports/latest.txt

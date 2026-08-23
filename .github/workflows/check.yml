@@ -1,0 +1,55 @@
+name: Sjekk iNatur
+
+on:
+  schedule:
+    # Jaktsesong (aug-okt): hvert 15. minutt, 05:00-22:00 norsk tid.
+    - cron: "*/15 3-20 * 8-10 *"
+    # Resten av året: én gang i timen.
+    - cron: "0 * * 1-7,11,12 *"
+  workflow_dispatch:
+
+concurrency:
+  group: inatur-check
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Installer
+        run: pip install -e .
+
+      - name: Hent lagret tilstand
+        uses: actions/cache/restore@v4
+        with:
+          path: state.db
+          key: inatur-state-${{ github.run_id }}
+          restore-keys: inatur-state-
+
+      - name: Kjør sjekk
+        run: inatur check
+
+      - name: Lagre tilstand
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state.db
+          key: inatur-state-${{ github.run_id }}
+
+      - name: Last opp rapport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport
+          path: reports/
+          retention-days: 30

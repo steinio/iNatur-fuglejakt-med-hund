@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+
+# Lokal tilstand og rapporter
+state.db
+state.db-journal
+reports/
+fixtures/raw/
+
+.pytest_cache/
+.coverage
+.DS_Store

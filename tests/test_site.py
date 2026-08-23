@@ -161,3 +161,22 @@ def test_offers_without_fylke_still_render():
     page = render_site([make("1", fylker=[])])
     assert "Rypejakt" in page
     assert "Hele landet (1)" in page
+
+
+def test_hidden_cards_are_actually_hidden():
+    """`.card` setter display:flex, som slår [hidden] fra nettleserens stilark.
+    Uten en egen regel filtrerer siden ingenting - telleren endrer seg, men
+    kortene blir stående."""
+    page = render_site([make()])
+    assert ".card[hidden]{display:none}" in page
+
+
+def test_every_display_rule_on_cards_has_a_hidden_override():
+    """Fanger opp at noen senere setter display på .card uten å hindre at
+    regelen overstyrer [hidden]."""
+    import re
+    from inatur.site import CSS
+
+    hides = ".card[hidden]{display:none}" in CSS.replace(" ", "")
+    sets_display = re.search(r"\.card\{[^}]*display:", CSS) is not None
+    assert not sets_display or hides

@@ -106,6 +106,10 @@ header p{margin:0;color:var(--muted);font-size:.9rem}
 .card{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--line);
   border-radius:12px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:9px}
 .card.prio{border-left-color:var(--accent)}
+/* Må stå her: [hidden] fra nettleserens stilark har samme spesifisitet som
+   .card, og vårt eget stilark kommer sist - uten denne blir .card{display:flex}
+   stående og filtrerte kort vises likevel. */
+.card[hidden]{display:none}
 .card h2{margin:0;font-size:1.02rem;line-height:1.35;letter-spacing:-.005em}
 .badge{align-self:flex-start;font-size:.76rem;font-weight:600;padding:3px 9px;
   border-radius:6px;letter-spacing:.01em}

@@ -64,7 +64,19 @@ alltid med *setningen som avgjorde* vedlagt, så du kan overprøve maskina.
 Vi varsler bevisst også ved `unclear` og `no_mention`. Å gå glipp av et
 lirypekort koster mer enn et varsel for mye.
 
-**3. Diff.** Alt lagres i SQLite, slik at du kun varsles om det som faktisk er
+**3. Utgått vs. utsolgt.** To ting som ser like ut, men ikke er det:
+
+- **Utgått** – jaktperioden er over. Kommer aldri tilbake, og filtreres bort
+  før detaljsidene hentes.
+- **Utsolgt** – kan bli ledig igjen ved restsalg eller avbestilling. Vises
+  ikke, men følges videre; det er nettopp dette verktøyet skal fange opp.
+
+Vi stoler ikke på inatur sitt `utløpt`-flagg alene. Av 1733 tilbud hadde 673
+flagget og 387 en jaktperiode som var over – og ingen av mengdene rommer den
+andre. Noen tilbud lå der med jaktperiode helt tilbake til **2014**. Til sammen
+var 779 av 1733 ikke aktuelle.
+
+**4. Diff.** Alt lagres i SQLite, slik at du kun varsles om det som faktisk er
 nytt:
 
 - **NYTT** – aldri sett før

@@ -106,6 +106,10 @@ class Offer:
     # "førstemann til mølla".
     lottery: bool = False
 
+    # inatur sitt eget utløpt-flagg. Sier ikke alt: noen tilbud har
+    # utløpt=false med en jaktperiode som tok slutt for lengst.
+    flagged_expired: bool = False
+
     short_description: str = ""
     dog: DogVerdict = field(default_factory=lambda: DogVerdict(DogStatus.NO_MENTION))
     raw_text: str = ""
@@ -129,6 +133,19 @@ class Offer:
 
     def refresh_hash(self) -> None:
         self.text_hash = hashlib.sha256(self.raw_text.encode("utf-8")).hexdigest()[:16]
+
+    @property
+    def expired(self) -> bool:
+        """Utgått for godt - i motsetning til utsolgt, som kan bli ledig igjen.
+
+        Vi stoler ikke på flagget alene. I datasettet finnes tilbud helt
+        tilbake til 2014, og de to kriteriene overlapper ikke: 673 har
+        flagget, 387 har en periode som er over, og ingen av mengdene
+        rommer den andre.
+        """
+        if self.flagged_expired:
+            return True
+        return bool(self.period_end and self.period_end < date.today())
 
     @property
     def full_url(self) -> str:

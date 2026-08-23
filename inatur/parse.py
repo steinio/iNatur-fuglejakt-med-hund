@@ -52,7 +52,10 @@ def offer_from_api(record: dict[str, Any]) -> Offer:
         sales_start=_epoch_to_date(record.get("salgsstart")),
         application_deadline=_epoch_to_date(record.get("soknadsfrist")),
         price=f"fra {int(price)} kr" if price else None,
-        available=not record.get("utsolgt", False) and not record.get("utlopt", False),
+        # Utsolgt kan bli ledig igjen; utløpt kan ikke. De holdes derfor
+        # fra hverandre - vi følger fortsatt med på utsolgte tilbud.
+        available=not record.get("utsolgt", False),
+        flagged_expired=bool(record.get("utlopt")),
         lottery=bool(record.get("harTrekning")),
         last_updated=record.get("sistOppdatert"),
         short_description=(record.get("kortBeskrivelse") or "").strip(),

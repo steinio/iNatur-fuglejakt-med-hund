@@ -29,6 +29,10 @@ def _prefilter(offer: Offer, config: Config) -> bool:
     Dette avgjør hvor mange detaljsider vi må hente, så det er her vi sparer
     mest tid - og belaster nettstedet minst.
     """
+    # Utgåtte tilbud kommer aldri tilbake. De filtreres bort her, før
+    # detaljsidene hentes - det sparer rundt 700 forespørsler per kjøring.
+    if offer.expired:
+        return False
     if config.require_birds and not offer.has_birds:
         return False
     if config.priority_only and not offer.is_priority:
@@ -47,6 +51,10 @@ def _keep(offer: Offer, config: Config) -> bool:
     # Uten vilkårsteksten har vi bare en gjetning fra tittelen. Da holder vi
     # tilbudet tilbake til neste kjøring i stedet for å vise feil konklusjon.
     if not offer.classified:
+        return False
+    # Utsolgte tilbud vises ikke, men følges videre: blir de ledige igjen,
+    # er det nettopp det vi vil varsle om.
+    if not offer.available:
         return False
     if offer.dog.status not in config.dog_statuses:
         return False

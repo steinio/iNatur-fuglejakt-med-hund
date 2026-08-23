@@ -33,7 +33,7 @@ def _prefilter(offer: Offer, config: Config) -> bool:
         return False
     if config.priority_only and not offer.is_priority:
         return False
-    if config.fylker and not any(f in (offer.fylke or "") for f in config.fylker):
+    if config.fylker and not (set(config.fylker) & set(offer.fylker)):
         return False
     if config.skip_lottery and offer.lottery:
         return False
@@ -43,6 +43,10 @@ def _prefilter(offer: Offer, config: Config) -> bool:
 def _keep(offer: Offer, config: Config) -> bool:
     """Endelig filter, etter at hundereglene er lest fra detaljsiden."""
     if not _prefilter(offer, config):
+        return False
+    # Uten vilkårsteksten har vi bare en gjetning fra tittelen. Da holder vi
+    # tilbudet tilbake til neste kjøring i stedet for å vise feil konklusjon.
+    if not offer.classified:
         return False
     if offer.dog.status not in config.dog_statuses:
         return False
@@ -82,13 +86,17 @@ def cmd_check(args: argparse.Namespace) -> int:
             if hit and hit[0] is not None and hit[0] == offer.last_updated:
                 offer.dog = hit[2]
                 offer.text_hash = hit[1]
+                offer.classified = True
             else:
                 stale.append(offer)
 
         reused = len(candidates) - len(stale)
+        remaining = max(0, len(stale) - config.max_details_per_run)
+        stale = stale[: config.max_details_per_run]
         print(
             f"  {len(candidates)} aktuelle - {reused} uendret, "
-            f"henter vilkår for {len(stale)}",
+            f"henter vilkår for {len(stale)}"
+            + (f" ({remaining} venter til neste kjøring)" if remaining else ""),
             file=sys.stderr,
         )
 
@@ -113,7 +121,7 @@ def cmd_check(args: argparse.Namespace) -> int:
         print(f"Rapport lagret: {target}", file=sys.stderr)
 
         # Nettsiden viser alt som er aktuelt nå - ikke bare det som er nytt.
-        page = write_site(relevant, config.site_path)
+        page = write_site(relevant, config.site_path, default_fylke=config.default_fylke)
         print(f"Nettside lagret: {page}", file=sys.stderr)
 
         if args.dry_run:

@@ -149,8 +149,13 @@ class Store:
                         offer.text_hash,
                         offer.dog.status.value,
                         ",".join(offer.species),
-                        offer.last_updated,
-                        json.dumps(offer.dog.to_dict(), ensure_ascii=False),
+                        # Bare ferdig vurderte tilbud legges i mellomlageret.
+                        # Uten dette ville en foreløpig gjetning fra tittelen
+                        # blitt gjenbrukt som om vilkårene var lest.
+                        offer.last_updated if offer.classified else None,
+                        json.dumps(offer.dog.to_dict(), ensure_ascii=False)
+                        if offer.classified
+                        else None,
                         now,
                         now,
                         now if offer.id in notified else None,

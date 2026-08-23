@@ -84,7 +84,10 @@ class Offer:
 
     tilbyder: Optional[str] = None
     kommune: Optional[str] = None
+    # Visningsstreng, f.eks. "Agder, Rogaland" for tilbud som krysser grensa.
     fylke: Optional[str] = None
+    # Samme informasjon som liste - det er denne vi filtrerer på.
+    fylker: list[str] = field(default_factory=list)
 
     species: list[str] = field(default_factory=list)
     priority_species: list[str] = field(default_factory=list)
@@ -114,6 +117,11 @@ class Offer:
     # Utledes av raw_text, men kan settes direkte når vi gjenbruker en
     # mellomlagret vurdering og dermed aldri henter teksten.
     text_hash: str = ""
+
+    # Er vilkårsteksten faktisk lest? Uten detaljsiden har vi bare en
+    # foreløpig vurdering fra tittel og ingress, og den er ikke god nok til
+    # å vise fram som en hundekonklusjon.
+    classified: bool = False
 
     def __post_init__(self) -> None:
         if not self.text_hash and self.raw_text:

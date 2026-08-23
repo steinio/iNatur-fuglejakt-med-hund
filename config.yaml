@@ -29,21 +29,25 @@ filters:
   # Maks pris i kroner. null = ingen grense.
   max_price: null
 
-  # Begrens til fylker. Tom liste = hele landet.
-  #
-  # Standard er Vestlandet. «Vestlandet» finnes ikke som verdi hos inatur -
-  # regionen er disse tre fylkene. Merk at Vestland dekker gamle Hordaland
-  # og Sogn og Fjordane etter sammenslåingen.
-  #
-  # Andre verdier i datasettet: Innlandet, Trøndelag, Buskerud, Akershus,
-  # Telemark, Troms, Nordland, Agder, Østfold, Vestfold, Oslo, Svalbard.
-  fylker: ["Vestland", "Rogaland", "Møre og Romsdal"]
+  # Hvilke fylker som HENTES. Tom liste = hele landet, og da får du alle
+  # fylker å velge mellom i nedtrekksmenyen på nettsiden.
+  # Snevre den inn (f.eks. ["Vestland"]) for raskere kjøringer.
+  fylker: []
 
 scraping:
   # Sekunder mellom hver forespørsel. Ikke sett denne under 0.5.
   delay: 0.6
   max_pages: 200
+  # Tak på detaljsider per kjøring. Første kjøring dekker altså ikke hele
+  # landet - resten tas av de neste kjøringene, og siden vokser gradvis.
+  # Slipper at én kjøring tar et kvarter.
+  max_details_per_run: 250
   respect_robots: true
+
+site:
+  # Fylket nettsiden viser når den åpnes. Kan endres i menyen uten å
+  # kjøre noe på nytt - alle hentede fylker ligger allerede i siden.
+  default_fylke: Vestland
 
 output:
   db_path: state.db

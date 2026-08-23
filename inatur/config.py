@@ -25,13 +25,16 @@ class Config:
     # Hopp over trekningstilbud (søknad, ikke direktesalg).
     skip_lottery: bool = False
     max_price: int | None = None
-    # Vestlandet som standard.
-    fylker: list[str] = field(
-        default_factory=lambda: ["Vestland", "Rogaland", "Møre og Romsdal"]
-    )
+    # Hvilke fylker som HENTES. Tom = hele landet, som gir alle valg i
+    # nedtrekksmenyen på nettsiden. Snevre den inn for raskere kjøringer.
+    fylker: list[str] = field(default_factory=list)
+    # Hvilket fylke nettsiden VISER når den åpnes.
+    default_fylke: str = "Vestland"
 
     delay: float = 0.6
     max_pages: int = 200
+    # Tak på detaljsider per kjøring, så én kjøring aldri blir urimelig lang.
+    max_details_per_run: int = 250
     respect_robots: bool = True
 
     db_path: str = "state.db"
@@ -57,9 +60,11 @@ class Config:
             priority_only=filters.get("priority_only", False),
             skip_lottery=filters.get("skip_lottery", False),
             max_price=filters.get("max_price"),
-            fylker=filters.get("fylker", cls().fylker) or [],
+            fylker=filters.get("fylker", []) or [],
+            default_fylke=(data.get("site", {}) or {}).get("default_fylke", "Vestland"),
             delay=scraping.get("delay", 0.6),
             max_pages=scraping.get("max_pages", 200),
+            max_details_per_run=scraping.get("max_details_per_run", 250),
             respect_robots=scraping.get("respect_robots", True),
             db_path=output.get("db_path", "state.db"),
             report_path=output.get("report_path", "reports/latest.txt"),

@@ -15,8 +15,10 @@ from inatur.models import DogStatus, DogVerdict, Offer
 from inatur.store import Store
 
 
-def make(oid="1", updated=1000, status=DogStatus.ALLOWED, text="Hund tillatt"):
+def make(oid="1", updated=1000, status=DogStatus.ALLOWED, text="Hund tillatt",
+         classified=True):
     return Offer(
+        classified=classified,
         id=oid,
         url=f"/jakt/{oid}/x",
         title=f"Rypejakt {oid}",
@@ -126,3 +128,51 @@ def test_hash_recomputes_when_text_changes():
     offer.raw_text = "ny tekst"
     offer.refresh_hash()
     assert offer.text_hash != first
+
+
+# ------------------------------------------- tak på detaljsider per kjøring
+
+
+def test_unclassified_offer_is_held_back():
+    """Uten vilkårsteksten har vi bare en gjetning fra tittelen - den skal
+    ikke vises som en hundekonklusjon."""
+    from inatur.cli import _keep
+    from inatur.config import Config
+
+    config = Config(fylker=[])
+    offer = make()
+    offer.classified = False
+    assert not _keep(offer, config)
+
+    offer.classified = True
+    assert _keep(offer, config)
+
+
+def test_enrich_marks_offer_as_classified():
+    from inatur.parse import enrich_from_detail
+
+    offer = make()
+    offer.classified = False
+    enrich_from_detail(offer, "<main>Jaktregler\nJakt med hund er tillatt.</main>")
+    assert offer.classified
+
+
+def test_detail_limit_is_configurable():
+    from inatur.config import Config
+
+    assert Config().max_details_per_run == 250
+
+
+def test_unclassified_offer_is_never_cached(store):
+    """Den farlige feilen: en foreløpig gjetning fra tittelen blir liggende i
+    mellomlageret og gjenbrukt som om vilkårene var lest."""
+    store.record([make(classified=False)])
+    assert store.cached_verdicts() == {}
+
+
+def test_mixed_batch_caches_only_classified(store):
+    store.record([make("1", classified=True), make("2", classified=False)])
+    cached = store.cached_verdicts()
+    assert "1" in cached
+    assert "2" not in cached
+    assert store.count() == 2  # begge lagres, men bare én kan gjenbrukes

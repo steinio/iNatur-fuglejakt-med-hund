@@ -43,6 +43,7 @@ def offer_from_api(record: dict[str, Any]) -> Offer:
         tilbyder=record.get("tilbydernavn"),
         kommune=kommuner or None,
         fylke=fylker or None,
+        fylker=[f for f in (record.get("fylker") or []) if f],
         species=birds,
         priority_species=priority,
         other_game=other_game,
@@ -97,4 +98,5 @@ def enrich_from_detail(offer: Offer, html: str) -> Offer:
     offer.raw_text = rules_text(text)
     offer.refresh_hash()
     offer.dog = classify_dog(offer.raw_text, title=offer.title)
+    offer.classified = True
     return offer

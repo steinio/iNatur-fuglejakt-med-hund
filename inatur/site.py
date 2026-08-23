@@ -82,8 +82,17 @@ header p{margin:0;color:var(--muted);font-size:.9rem}
 .stat span{font-size:.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .controls{position:sticky;top:0;z-index:5;background:var(--bg);
   padding:14px 0 10px;border-bottom:1px solid var(--line);margin-bottom:18px}
-#q{width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:10px;
-  background:var(--panel);color:var(--ink);font-size:1rem}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+#q{flex:1 1 220px;min-width:0;padding:11px 14px;border:1px solid var(--line);
+  border-radius:10px;background:var(--panel);color:var(--ink);font-size:1rem}
+#fylke{flex:0 0 auto;padding:11px 34px 11px 14px;border:1px solid var(--line);
+  border-radius:10px;background:var(--panel);color:var(--ink);font-size:1rem;
+  font-family:inherit;font-weight:600;cursor:pointer;appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),
+    linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 18px) 51%,calc(100% - 13px) 51%;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+#fylke:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 #q::placeholder{color:var(--muted)}
 .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
 .chip{border:1px solid var(--line);background:var(--panel);color:var(--muted);
@@ -129,6 +138,7 @@ JS = """
   var q=document.getElementById('q'),
       chips=Array.prototype.slice.call(document.querySelectorAll('.chip')),
       cards=Array.prototype.slice.call(document.querySelectorAll('.card')),
+      fy=document.getElementById('fylke'),
       out=document.getElementById('count'),
       none=document.getElementById('empty');
   function active(group){
@@ -138,15 +148,19 @@ JS = """
   }
   function apply(){
     var text=(q.value||'').toLowerCase().trim(),
-        st=active('status'), prio=active('prio').length>0, n=0;
+        st=active('status'), prio=active('prio').length>0,
+        fylke=fy?fy.value:'', n=0;
     cards.forEach(function(c){
       var ok=true;
-      if(st.length && st.indexOf(c.dataset.status)<0) ok=false;
+      // Et tilbud kan ligge i flere fylker (grensetilfeller) - da holder
+      // det at ett av dem er det valgte.
+      if(fylke && (c.dataset.fylker||'').split('|').indexOf(fylke)<0) ok=false;
+      if(ok && st.length && st.indexOf(c.dataset.status)<0) ok=false;
       if(ok && prio && c.dataset.prio!=='1') ok=false;
       if(ok && text && c.dataset.search.indexOf(text)<0) ok=false;
       c.hidden=!ok; if(ok) n++;
     });
-    out.textContent=n+(n===1?' tilbud':' tilbud');
+    out.textContent=n+' tilbud'+(fylke?' i '+fylke:'');
     none.hidden=n>0;
   }
   chips.forEach(function(c){
@@ -155,6 +169,22 @@ JS = """
       apply();
     });
   });
+  if(fy){
+    // Husk valget til neste besøk. Nettleseren kan nekte oss lagring
+    // (privat vindu, blokkerte informasjonskapsler), så alt pakkes inn.
+    try{
+      var saved=localStorage.getItem('inatur.fylke');
+      if(saved!==null){
+        for(var i=0;i<fy.options.length;i++){
+          if(fy.options[i].value===saved){ fy.value=saved; break; }
+        }
+      }
+    }catch(e){}
+    fy.addEventListener('change',function(){
+      try{ localStorage.setItem('inatur.fylke', fy.value); }catch(e){}
+      apply();
+    });
+  }
   q.addEventListener('input',apply);
   apply();
 })();
@@ -210,9 +240,11 @@ def _card(offer: Offer) -> str:
     if offer.tilbyder:
         rows.append(f"<dt>Tilbyder</dt><dd>{_esc(offer.tilbyder)}</dd>")
 
+    fylker = "|".join(offer.fylker)
+
     return f"""<article class="card{' prio' if offer.is_priority else ''}"
  data-status="{status.value}" data-prio="{1 if offer.is_priority else 0}"
- data-search="{_esc(searchable)}">
+ data-fylker="{_esc(fylker)}" data-search="{_esc(searchable)}">
 <span class="badge {status.value}">{_esc(badge)}</span>
 <h2>{'★ ' if offer.is_priority else ''}{_esc(offer.title)}</h2>
 <div class="arter">{arter}</div>
@@ -222,8 +254,16 @@ def _card(offer: Offer) -> str:
 </article>"""
 
 
-def render_site(offers: list[Offer], generated: datetime | None = None) -> str:
-    """Bygger hele siden. `offers` er allerede filtrert av konfigurasjonen."""
+def render_site(
+    offers: list[Offer],
+    generated: datetime | None = None,
+    default_fylke: str = "Vestland",
+) -> str:
+    """Bygger hele siden. `offers` er allerede filtrert av konfigurasjonen.
+
+    Alle hentede fylker legges i siden, og nedtrekksmenyen velger ett av dem.
+    Da kan du bytte fylke uten at noe må kjøres på nytt.
+    """
     generated = generated or datetime.now(timezone.utc).astimezone()
 
     ranked = sorted(
@@ -235,14 +275,39 @@ def render_site(offers: list[Offer], generated: datetime | None = None) -> str:
         ),
     )
 
+    fylke_counts: dict[str, int] = {}
+    for offer in ranked:
+        for f in offer.fylker:
+            fylke_counts[f] = fylke_counts.get(f, 0) + 1
+
+    # Er standardfylket tomt for tilbud, ville siden sett ødelagt ut ved
+    # åpning. Da faller vi tilbake på det fylket som har flest.
+    selected = default_fylke if fylke_counts.get(default_fylke) else ""
+    if not selected and fylke_counts:
+        selected = max(fylke_counts, key=lambda f: fylke_counts[f])
+
+    fylke_html = "".join(
+        [
+            f'<option value=""{" selected" if not selected else ""}>'
+            f"Hele landet ({len(ranked)})</option>"
+        ]
+        + [
+            f'<option value="{_esc(f)}"{" selected" if f == selected else ""}>'
+            f"{_esc(f)} ({n})</option>"
+            for f, n in sorted(fylke_counts.items())
+        ]
+    )
+
     counts = {s: sum(1 for o in ranked if o.dog.status is s) for s in STATUS_ORDER}
     priority = sum(1 for o in ranked if o.is_priority)
 
+    # Tallene gjelder fylket som vises ved åpning.
+    shown = [o for o in ranked if not selected or selected in o.fylker]
     stats = [
-        ("Tilbud", len(ranked)),
-        ("Li-/fjellrype", priority),
-        ("Hund tillatt", counts[DogStatus.ALLOWED]),
-        ("Med forbehold", counts[DogStatus.CONDITIONAL]),
+        ("Tilbud", len(shown)),
+        ("Li-/fjellrype", sum(1 for o in shown if o.is_priority)),
+        ("Hund tillatt", sum(1 for o in shown if o.dog.status is DogStatus.ALLOWED)),
+        ("Med forbehold", sum(1 for o in shown if o.dog.status is DogStatus.CONDITIONAL)),
     ]
     stat_html = "".join(
         f"<div class='stat'><b>{n}</b><span>{_esc(label)}</span></div>" for label, n in stats
@@ -285,8 +350,11 @@ def render_site(offers: list[Offer], generated: datetime | None = None) -> str:
 <div class="stats">{stat_html}</div>
 
 <div class="controls">
-  <input id="q" type="search" placeholder="Søk på sted, tilbyder eller art…"
-         autocomplete="off" aria-label="Søk">
+  <div class="row">
+    <select id="fylke" aria-label="Velg fylke">{fylke_html}</select>
+    <input id="q" type="search" placeholder="Søk på sted, tilbyder eller art…"
+           autocomplete="off" aria-label="Søk">
+  </div>
   <div class="chips">{chip_html}</div>
 </div>
 
@@ -311,8 +379,12 @@ def render_site(offers: list[Offer], generated: datetime | None = None) -> str:
 </html>"""
 
 
-def write_site(offers: list[Offer], path: str | Path = "site/index.html") -> Path:
+def write_site(
+    offers: list[Offer],
+    path: str | Path = "site/index.html",
+    default_fylke: str = "Vestland",
+) -> Path:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(render_site(offers), encoding="utf-8")
+    target.write_text(render_site(offers, default_fylke=default_fylke), encoding="utf-8")
     return target

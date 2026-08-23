@@ -104,9 +104,14 @@ rapporteres, om ikke-fugletilbud skal filtreres bort, kun li-/fjellrype,
 om trekningstilbud skal hoppes over, prisgrense, fylker, og hvor forsiktig
 scrapingen skal være.
 
-**Standardregionen er Vestlandet.** «Vestlandet» finnes ikke som verdi hos
-inatur – regionen er fylkene `Vestland`, `Rogaland` og `Møre og Romsdal`. Tøm
-`fylker` for å søke i hele landet.
+**Fylke velges på selve siden.** Nedtrekksmenyen viser ett fylke om gangen,
+med `Vestland` som standard (`site.default_fylke`). Alle hentede fylker ligger
+allerede i siden, så du bytter uten at noe kjøres på nytt, og valget huskes til
+neste besøk. Tilbud som krysser fylkesgrensa dukker opp under begge.
+
+`filters.fylker` styrer hva som *hentes*. Tom liste = hele landet, som gir alle
+fylker i menyen. Snevre den inn til f.eks. `["Vestland"]` for raskere kjøringer
+og en kortere meny.
 
 ## Hvorfor kjøringene er raske
 
@@ -120,12 +125,20 @@ uendret siden forrige kjøring, gjenbruker vi hundevurderingen og henter aldri
 detaljsiden. Alle vurderte tilbud lagres – også de vi filtrerer bort – ellers
 ville «hund ikke tillatt»-tilbudene blitt hentet på nytt hver eneste gang.
 
-Målt på Vestlandet:
+**Tak på detaljsider per kjøring.** Hele landet har ~1200 aktuelle tilbud, og
+å hente alle på én gang tok over ti minutter. Nå hentes maks
+`max_details_per_run` (250) per kjøring, og resten tas av de neste. Siden vokser
+altså over den første timen i stedet for å låse én lang kjøring.
 
-| | Forespørsler | Tid |
-|---|---|---|
-| Første kjøring | ~150 | 90 s |
-| Senere kjøringer | ~14 | **8 s** |
+Et tilbud vises ikke før vilkårene faktisk er lest. Uten detaljsiden har vi bare
+en gjetning fra tittelen, og den er ikke god nok til å vise fram som en
+hundekonklusjon – den lagres derfor heller ikke i mellomlageret.
+
+| | Tid |
+|---|---|
+| Hele landet, ett fylke konfigurert | ~90 s |
+| Hele landet, alt hentet | ~200 s |
+| Ingenting endret | **8–73 s** |
 
 Til sammenligning brukte den første versjonen ~1150 forespørsler og nær 14
 minutter – hvert kvarter. Det var verken hensynsfullt mot inatur.no eller

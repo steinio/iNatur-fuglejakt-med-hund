@@ -11,7 +11,8 @@ from inatur.models import DogStatus, DogVerdict, Offer
 from inatur.site import render_site
 
 
-def make(oid="1", title="Rypejakt", status=DogStatus.ALLOWED, prio=True, **kw):
+def make(oid="1", title="Rypejakt", status=DogStatus.ALLOWED, prio=True,
+         fylker=("Vestland",), **kw):
     return Offer(
         id=oid,
         url=f"/jakt/{oid}/rypejakt",
@@ -19,6 +20,7 @@ def make(oid="1", title="Rypejakt", status=DogStatus.ALLOWED, prio=True, **kw):
         species=["Lirype", "Fjellrype"] if prio else ["Orrfugl"],
         priority_species=["Lirype", "Fjellrype"] if prio else [],
         dog=DogVerdict(status, evidence=["Jakt med hund er tillatt"]),
+        fylker=list(fylker),
         **kw,
     )
 
@@ -98,3 +100,64 @@ def test_search_index_is_lowercased():
     offer = make(title="Rypejakt NAMSSKOGAN", fylke="Trøndelag")
     page = render_site([offer])
     assert "namsskogan" in page
+
+
+# ------------------------------------------------------- fylkevelgeren
+
+
+def test_dropdown_lists_every_fylke_with_counts():
+    page = render_site([
+        make("1", fylker=["Vestland"]),
+        make("2", fylker=["Vestland"]),
+        make("3", fylker=["Rogaland"]),
+    ])
+    assert "Vestland (2)" in page
+    assert "Rogaland (1)" in page
+    assert "Hele landet (3)" in page
+
+
+def test_vestland_is_selected_by_default():
+    page = render_site([make("1", fylker=["Vestland"]), make("2", fylker=["Innlandet"])])
+    assert '<option value="Vestland" selected>' in page
+    assert '<option value="Innlandet">' in page
+
+
+def test_default_fylke_can_be_overridden():
+    page = render_site(
+        [make("1", fylker=["Vestland"]), make("2", fylker=["Troms"])],
+        default_fylke="Troms",
+    )
+    assert '<option value="Troms" selected>' in page
+
+
+def test_falls_back_when_default_fylke_has_no_offers():
+    """Tomt standardfylke ville gitt en tilsynelatende tom side ved åpning."""
+    page = render_site(
+        [make("1", fylker=["Innlandet"]), make("2", fylker=["Innlandet"]),
+         make("3", fylker=["Troms"])],
+        default_fylke="Vestland",
+    )
+    assert '<option value="Innlandet" selected>' in page  # flest tilbud
+    assert "Vestland" not in page
+
+
+def test_stats_count_only_the_selected_fylke():
+    page = render_site([
+        make("1", fylker=["Vestland"]),
+        make("2", fylker=["Innlandet"]),
+        make("3", fylker=["Innlandet"]),
+    ])
+    # Vestland er valgt, så toppstatistikken skal vise 1 - ikke 3.
+    assert "<b>1</b><span>Tilbud</span>" in page
+
+
+def test_card_carries_all_its_fylker():
+    """Grensetilfeller ligger i flere fylker og skal dukke opp under begge."""
+    page = render_site([make("1", fylker=["Agder", "Rogaland"])])
+    assert 'data-fylker="Agder|Rogaland"' in page
+
+
+def test_offers_without_fylke_still_render():
+    page = render_site([make("1", fylker=[])])
+    assert "Rypejakt" in page
+    assert "Hele landet (1)" in page

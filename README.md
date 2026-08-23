@@ -108,6 +108,31 @@ Detaljsider hentes bare for tilbud som allerede har passert art- og
 tilgjengelighetsfiltrene, så et smalere filter betyr både raskere kjøring og
 mindre belastning på nettstedet.
 
+## Grensesnittet: nettsiden
+
+Hver kjøring bygger en selvstendig HTML-side og publiserer den på **GitHub
+Pages**. Det er den du bruker til daglig – åpne lenken på mobilen, filtrer, og
+trykk videre til inatur.no.
+
+Siden har søk på sted, tilbyder og art, filterknapper for hundestatus og for
+kun li-/fjellrype, og viser sitatet som avgjorde hundevurderingen på hvert kort.
+Alt ligger i én fil uten eksterne ressurser, så den kan ikke brekke fordi et
+CDN er nede, og den følger lyst/mørkt tema fra telefonen.
+
+### Førstegangsoppsett
+
+To innstillinger må settes én gang i repoet:
+
+1. **Settings → Pages → Source: GitHub Actions**
+2. **Settings → General → Default branch: `main`**
+
+Kjør deretter arbeidsflyten «Sjekk iNatur» én gang manuelt fra Actions-fanen.
+GitHub starter ikke planlagte kjøringer i et helt nytt repo før arbeidsflyten
+har kjørt minst én gang.
+
+Merk at repoet er offentlig, så siden blir det også. Den inneholder kun
+offentlig tilgjengelige tilbud fra inatur.no.
+
 ## Planlegging
 
 GitHub Actions kjører sjekken automatisk:
@@ -115,12 +140,12 @@ GitHub Actions kjører sjekken automatisk:
 - **aug–okt** (sesong og restsalg): hvert 15. minutt, 05–22 norsk tid
 - **resten av året**: hver time
 
-Tilstanden ligger i Actions-cachen, og rapporten lastes opp som artifact.
-Kan også kjøres fra `workflow_dispatch`.
+Tilstanden ligger i Actions-cachen, tekstrapporten lastes opp som artifact, og
+nettsiden publiseres til Pages. Kan også kjøres fra `workflow_dispatch`.
 
-Varsling er foreløpig konsoll/logg. `inatur/report.py` har et smalt grensesnitt
-(`render` + `write`) nettopp for at Telegram eller e-post kan legges til senere
-uten å røre resten.
+Push-varsling er ikke satt opp ennå. `inatur/report.py` og `inatur/site.py` har
+begge et smalt grensesnitt (`render` + `write`) nettopp for at Telegram eller
+e-post kan legges til senere uten å røre resten.
 
 ## Folkeskikk
 

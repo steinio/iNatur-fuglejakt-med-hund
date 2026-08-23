@@ -41,3 +41,5 @@ scraping:
 output:
   db_path: state.db
   report_path: reports/latest.txt
+  # HTML-siden som publiseres på GitHub Pages.
+  site_path: site/index.html

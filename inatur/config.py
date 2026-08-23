@@ -33,6 +33,7 @@ class Config:
 
     db_path: str = "state.db"
     report_path: str = "reports/latest.txt"
+    site_path: str = "site/index.html"
 
     @classmethod
     def load(cls, path: str | Path = DEFAULT_PATH) -> "Config":
@@ -59,6 +60,7 @@ class Config:
             respect_robots=scraping.get("respect_robots", True),
             db_path=output.get("db_path", "state.db"),
             report_path=output.get("report_path", "reports/latest.txt"),
+            site_path=output.get("site_path", "site/index.html"),
         )
 
     @property

@@ -10,6 +10,7 @@ dist/
 state.db
 state.db-journal
 reports/
+site/
 # Rådata og cache fra kalibrering (tests/fixtures er sjekket inn)
 /fixtures/
 

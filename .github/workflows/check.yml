@@ -13,11 +13,16 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   check:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -29,6 +34,8 @@ jobs:
       - name: Installer
         run: pip install -e .
 
+      # Tilstanden avgjør hva som er «nytt» siden sist. Uten den ville hver
+      # kjøring rapportert alt på nytt.
       - name: Hent lagret tilstand
         uses: actions/cache/restore@v4
         with:
@@ -46,10 +53,21 @@ jobs:
           path: state.db
           key: inatur-state-${{ github.run_id }}
 
-      - name: Last opp rapport
+      - name: Last opp tekstrapport
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: rapport
           path: reports/
           retention-days: 30
+
+      - uses: actions/configure-pages@v5
+
+      - name: Pakk nettsiden
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+      - name: Publiser til GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

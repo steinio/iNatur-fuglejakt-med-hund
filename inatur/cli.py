@@ -19,6 +19,7 @@ from .match import classify_dog, find_non_bird_game, find_species
 from .models import Offer
 from .parse import detail_text, enrich_from_detail, offer_from_api, rules_text
 from .report import render, write
+from .site import write_site
 from .store import Store
 
 
@@ -88,6 +89,10 @@ def cmd_check(args: argparse.Namespace) -> int:
 
         target = write(report, config.report_path)
         print(f"Rapport lagret: {target}", file=sys.stderr)
+
+        # Nettsiden viser alt som er aktuelt nå - ikke bare det som er nytt.
+        page = write_site(relevant, config.site_path)
+        print(f"Nettside lagret: {page}", file=sys.stderr)
 
         if args.dry_run:
             print("(dry-run: tilstanden er ikke oppdatert)", file=sys.stderr)
